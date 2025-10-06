@@ -1,13 +1,41 @@
 package main
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"os"
+	"time"
+	"log"
+
+	"github.com/gofiber/fiber/v2"
+)
+
+type RootResponse struct {
+	Message	string `json:"message"`
+	Timestamp	int64 `json:"timestamp"` 
+}
+
+func handleRoot(c *fiber.Ctx) error {
+	var response RootResponse
+		response.Message = "My name is Nick Kaplan"
+		response.Timestamp = time.Now().Unix()
+		c.Status(fiber.StatusOK)
+	return c.JSON(response)
+}
 
 func main() {
-	app := fiber.New()
+	var app *fiber.App = fiber.New()
 
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("API stub working")
-	})
+	app.Get("/", handleRoot)
 
-	app.Listen(":80")
-t }
+	var port string =  os.Getenv("PORT")
+	if port == "" {
+		port = "80"
+	}
+
+	var address string = ":" + port
+	log.Printf("Starting server on %s ...", address)
+
+	var err error = app.Listen(address)
+	if err != nil {
+		log.Fatalf("Server failed to start: %v", err)
+	}
+}

@@ -1,14 +1,39 @@
 # devops-demo
 
-Small Go API that returns my name and a timestamp.  
-It is containerized with Docker, verified by GitHub Actions, and deployed to the cloud.
+Simple Go API that returns my name and a timestamp.  
+Built with Fiber for routing and designed to be containerized and deployed on AWS.
 
 ## Features
-- Minimal Go API (using Fiber framework)
-- JSON response with name + timestamp
-- Dockerized for consistent builds
-- CI/CD pipeline with GitHub Actions
+- Lightweight Go API (Fiber framework)
+- JSON response with `message` and `timestamp`
+- Environment-based port configuration (`PORT` variable)
+- Plans for Docker containerization and CI/CD with GitHub Actions
 - Cloud deployment (AWS)
 
-## Getting Started
-(... More to be added soon ...)
+## How to Run
+
+Default run (port 80, may require admin privileges):
+
+```bash
+go run main.go
+```
+Visit http://localhost/
+
+Running with custom port:
+
+```bash
+PORT=8000 go run main.go
+```
+Visit http://localhost:8000/
+
+To test with curl:
+```
+curl -i http://localhost:8000/
+```
+Expected output:
+```
+{
+  "message": "My name is Nick Kaplan",
+  "timestamp": 1759726241 
+}
+```

@@ -1,0 +1,13 @@
+# Go binaries
+/server
+*.exe
+*.out
+
+# Local build output
+bin/
+dist/
+
+# Editor/OS artifacts
+.DS_Store
+.vscode/
+.idea/

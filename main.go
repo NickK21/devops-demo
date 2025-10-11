@@ -16,7 +16,7 @@ type RootResponse struct {
 func handleRoot(c *fiber.Ctx) error {
 	var response RootResponse
 		response.Message = "My name is Nick Kaplan"
-		response.Timestamp = time.Now().Unix()
+		response.Timestamp = time.Now().UnixMilli()
 		c.Status(fiber.StatusOK)
 	return c.JSON(response)
 }

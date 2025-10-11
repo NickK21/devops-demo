@@ -29,7 +29,21 @@ This file tracks progress and decisions made during the DevOps assessment projec
 
 ---
 
+## 2025-10-10 — Containerization Completed
+- Added `.dockerignore` to keep image lean (exclude binaries, editor files, etc.).
+- Created a multi-stage `Dockerfile`:
+  - Uses `golang:1.22-alpine` for build stage.
+  - Compiles a static binary with `CGO_ENABLED=0` for portability.
+  - Uses `distroless/static:nonroot` for secure runtime.
+  - Runs as non-root and exposes port 80.
+- Successfully built and tested container locally:
+  - `docker build -t devops-demo:local .`
+  - `docker run --rm -p 8000:80 devops-demo:local`
+  - Verified JSON response at `http://localhost:8000/`.
+- Committed Dockerfile and .dockerignore to GitHub.
+
+---
+
 ## Next Steps
-- Containerize the app with a clear, well-documented Dockerfile.
-- Add a GitHub Actions workflow for automated build and verification (apprentice-action).
-- Deploy the containerized app to AWS (evaluate Fargate, Elastic Beanstalk, or EC2).
+- Set up AWS Fargate deployment (manual first).
+- Add a GitHub Actions workflow for CI/CD automation (build, push, deploy).

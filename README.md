@@ -37,3 +37,22 @@ Expected output:
   "timestamp": 1759726241 
 }
 ```
+## Run in Docker
+
+Build the image:
+```bash
+docker build -t devops-demo:local .
+```
+Run the container (host port 8000 → container port 80):
+```bash
+docker run --rm -p 8000:80 --name devops-demo devops-demo:local
+```
+http://localhost:8000/
+
+Expected output:
+```bash
+{
+  "message": "My name is Nick Kaplan",
+  "timestamp": 1759726241
+}
+```

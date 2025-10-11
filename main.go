@@ -13,8 +13,9 @@ func handleRoot(c *fiber.Ctx) error {
 		var message string = "My name is Nick Kaplan"
 		var ts int64 = time.Now().UnixMilli()
 
-		c.Type("json")
-		var body string = fmt.Sprintf(`{"message":"%s","timestamp":%d}`, message, ts)
+		c.Set(fiber.HeaderContentType, "application/json")
+
+		var body string = fmt.Sprintf(`{"Message":"%s","Timestamp":%d}`, message, ts)
 		c.Status(fiber.StatusOK)
 	return c.SendString(body)
 }

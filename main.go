@@ -16,8 +16,11 @@ func handleRoot(c *fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, "application/json")
 
 		var body string = fmt.Sprintf(`{"message":"%s","timestamp":%d}`, message, ts)
+
 		c.Status(fiber.StatusOK)
-	return c.SendString(body)
+
+	// Send raw bytes to avoid string conversions
+	return c.Send([]byte(body))
 }
 
 func main() {

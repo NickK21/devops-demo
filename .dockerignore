@@ -1,0 +1,12 @@
+/server
+*.exe
+*.out
+
+bin/
+dist/
+
+.git
+.gitignore
+.DS_STORE
+.vscode/
+.idea/

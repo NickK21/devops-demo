@@ -32,6 +32,11 @@ jobs:
           load: true
           tags: devops-demo:test
 
+      - name: Run container for tests (port 80)
+        run: |
+          docker run -d --rm -p 80:80 --name devops-demo-test devops-demo:test
+          sleep 2
+
       - name: Verify app with apprentice-action
         uses: liatrio/github-actions/apprentice-action@master
 

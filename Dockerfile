@@ -9,14 +9,12 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/server ./main.go
 
-FROM gcr.io/distroless/static:nonroot
+FROM gcr.io/distroless/static
 
 WORKDIR /app
 
 COPY --from=build /out/server /app/server
 
 EXPOSE 80
-
-USER nonroot:nonroot
 
 ENTRYPOINT ["/app/server"]

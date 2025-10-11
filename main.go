@@ -2,23 +2,21 @@ package main
 
 import (
 	"os"
+	"fmt"
 	"time"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-type RootResponse struct {
-	Message	string `json:"message"`
-	Timestamp	int64 `json:"timestamp"` 
-}
-
 func handleRoot(c *fiber.Ctx) error {
-	var response RootResponse
-		response.Message = "My name is Nick Kaplan"
-		response.Timestamp = time.Now().UnixMilli()
+		var message string = "My name is Nick Kaplan"
+		var ts int64 = time.Now().UnixMilli()
+
+		c.Type("json")
+		var body string = fmt.Sprintf(`{"message":"%s","timestamp":%d}`, message, ts)
 		c.Status(fiber.StatusOK)
-	return c.JSON(response)
+	return c.SendString(body)
 }
 
 func main() {
@@ -26,7 +24,7 @@ func main() {
 
 	app.Get("/", handleRoot)
 
-	var port string =  os.Getenv("PORT")
+	var port string = os.Getenv("PORT")
 	if port == "" {
 		port = "80"
 	}

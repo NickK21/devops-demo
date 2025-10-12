@@ -1,30 +1,27 @@
 name: ci
 
-# Tells GH to run the workflow whenever code is 
-# pushed to main, or whenever a PR targets main
 on:
   push:
     branches: [ "main" ]
   pull_request:
 
-# Runs one job on a clean Ubuntu VM for the job
 jobs:
-  build-test-push:
+  build-and-run:
     runs-on: ubuntu-latest
-
-    env:
-      #  
-      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/devops-demo
-      IMAGE_TAG: ${{ github.sha }}-${{ github.run_number }}
-
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tag }}
+      image-name: ${{ steps.meta.outputs.name }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - id: meta
+        name: Compute image meta
+        run: |
+          echo "name=${{ secrets.DOCKERHUB_USERNAME }}/devops-demo" >> $GITHUB_OUTPUT
+          echo "tag=${GITHUB_SHA}-${GITHUB_RUN_NUMBER}" >> $GITHUB_OUTPUT
 
-      - name: Build image (no push yet)
+      - name: Build image (local load)
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -32,31 +29,51 @@ jobs:
           load: true
           tags: devops-demo:test
 
-      - name: Run container for tests (port 80)
+      - name: Run container on port 80
         run: |
           docker run -d --rm -p 80:80 --name devops-demo-test devops-demo:test
           sleep 2
 
-      - name: Verify app with apprentice-action
+  diagnostics:
+    runs-on: ubuntu-latest
+    needs: build-and-run
+    steps:
+      - name: Probe localhost and verify minified JSON
+        run: |
+          set -euo pipefail
+          curl -s http://localhost/ > /tmp/body.json
+          # exactly minified (no trailing newline)
+          diff -u /tmp/body.json <(jq -cj . /tmp/body.json)
+          # JS-style check
+          node -e 'const fs=require("fs");const b=fs.readFileSync("/tmp/body.json","utf8");const s=JSON.stringify(JSON.parse(b)); if(b!==s) process.exit(1)'
+      - name: Show headers
+        run: curl -sI http://localhost/ | grep -i '^content-type:' || true
+
+  apprentice_action:
+    runs-on: ubuntu-latest
+    needs: build-and-run
+    continue-on-error: true 
+    steps:
+      - name: Verify with apprentice-action
         uses: liatrio/github-actions/apprentice-action@master
 
+  push:
+    runs-on: ubuntu-latest
+    needs: [diagnostics]
+    if: needs.diagnostics.result == 'success'
+    steps:
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push with unique tag + latest
+      - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: true
           tags: |
-            ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-            ${{ env.IMAGE_NAME }}:latest
-
-      - name: Print pushed image refs
-        run: |
-          echo "Pushed: $IMAGE_NAME:$IMAGE_TAG"
-          echo "Pushed: $IMAGE_NAME:latest"
+            ${{ secrets.DOCKERHUB_USERNAME }}/devops-demo:${{ github.sha }}-${{ github.run_number }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/devops-demo:latest

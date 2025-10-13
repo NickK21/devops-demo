@@ -44,6 +44,22 @@ This file tracks progress and decisions made during the DevOps assessment projec
 
 ---
 
+## 2025-10-12 — CI diagnostics + ECS deploy (public IP)
+
+- Added/updated CI workflow (`.github/workflows/ci.yml`):
+  - Build image with Docker Buildx.
+  - Run container on port 80 and perform diagnostics:
+    - Fetch `/` and verify `Content-Type: application/json`.
+    - Enforce exact minified body (`diff` vs `jq -cj .` and `JSON.stringify(JSON.parse(body))`).
+  - Run `liatrio/github-actions/apprentice-action` (final “minified JSON” test is a stub; diagnostics cover it).
+  - Login to Docker Hub and push image with tags `<git-sha>-<run-number>` and `latest`.
+- Created ECS task definition on Fargate:
+  - Image: `<dockerhub-username>/devops-demo:latest`
+  - Port 80, assign public IP, SG allows inbound TCP/80 for the demo.
+- Deployed ECS service (no ALB) and verified with `curl` against the public IP:
+  - Example: `{"message":"My name is Nick Kaplan","timestamp":1760326289394}`
+
+---
+
 ## Next Steps
-- Set up AWS Fargate deployment (manual first).
-- Add a GitHub Actions workflow for CI/CD automation (build, push, deploy).
+- Implement extra credit version field and auto-deploy workflow.

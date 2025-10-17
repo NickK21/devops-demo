@@ -18,11 +18,11 @@ jobs:
       ECS_CONTAINER_NAME: devops-demo
 
     steps:
-      - uses: actions/checkout@7208146c9ce4749b4ff44ff8030d953a578fa209
-      - uses: docker/setup-buildx-action@7208146c9ce4749b4ff44ff8030d953a578fa209
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: docker/setup-buildx-action@aa33708b3d5b5b19f6c749aa92127b69c0bdb7de
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@7208146c9ce4749b4ff44ff8030d953a578fa209
+        uses: docker/build-push-action@f8eddb25a7e9c1d2003393a1c7aab06fd596deef
         with:
           context: .
           file: ./Dockerfile
@@ -32,7 +32,7 @@ jobs:
             docker.io/nickkap/devops-demo:latest
 
       - name: Setup Node (for minified-body check)
-        uses: actions/setup-node@7208146c9ce4749b4ff44ff8030d953a578fa209
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8
         with:
           node-version: '18'
 
@@ -70,7 +70,7 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/devops-demo:latest
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@7208146c9ce4749b4ff44ff8030d953a578fa209
+        uses: aws-actions/configure-aws-credentials@e3c7f88bf8e49b4c4a30f8a9aa001a886bf6f496
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

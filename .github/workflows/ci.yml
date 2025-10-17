@@ -18,11 +18,17 @@ jobs:
       ECS_CONTAINER_NAME: devops-demo
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
-      - uses: docker/setup-buildx-action@aa33708b3d5b5b19f6c749aa92127b69c0bdb7de
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Docker login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@f8eddb25a7e9c1d2003393a1c7aab06fd596deef
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
@@ -32,45 +38,28 @@ jobs:
             docker.io/nickkap/devops-demo:latest
 
       - name: Setup Node (for minified-body check)
-        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
 
       - name: Run container
         run: |
-          docker run -d --rm -p 80:80 --name devops-demo-test devops-demo:test
-          sleep 2
-          curl -s http://localhost/ > /tmp/body.json
+          docker run -d --rm -p 80:80 --name devops-demo-test docker.io/nickkap/devops-demo:${{ github.sha }}
+          for i in {1..20}; do curl -sf http://localhost/ && break || sleep 0.5; done > /tmp/body.json
           diff -u /tmp/body.json <(jq -cj . /tmp/body.json)
           node -e 'const fs=require("fs");const b=fs.readFileSync("/tmp/body.json","utf8");const s=JSON.stringify(JSON.parse(b)); if(b!==s) process.exit(1)'
           curl -sI http://localhost/ | grep -i '^content-type:'
+      
+      - name: Stop test container
+        if: always()
+        run: docker rm -f devops-demo-test || true
 
       - name: Verify with apprentice-action
         uses: liatrio/github-actions/apprentice-action@7208146c9ce4749b4ff44ff8030d953a578fa209
         continue-on-error: true
 
-      - name: Log in and push (only if above succeeded)
-        if: success()
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Push image
-        if: success()
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          build-args: |
-            GIT_SHA=${{ github.sha }}
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/devops-demo:${{ github.sha }}-${{ github.run_number }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/devops-demo:latest
-
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e3c7f88bf8e49b4c4a30f8a9aa001a886bf6f496
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -78,7 +67,7 @@ jobs:
         
       - name: Render task definition (use SHA tag)
         id: render
-        uses: aws-actions/amazon-ecs-render-task-definition@cbed19f1b86bbb18f59cfffde7107b93cc9b75da
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: aws/ecs-taskdef.json
           container-name: ${{ env.ECS_CONTAINER_NAME }}
@@ -93,7 +82,7 @@ jobs:
           test "$IMG" = "$EXPECT"
 
       - name: Deploy to ECS service
-        uses: aws-actions/amazon-ecs-deploy-task-definition@894716a47351b1f52a6a1d140fd53fdb046ec619
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           cluster: ${{ env.ECS_CLUSTER }}
           service: ${{ env.ECS_SERVICE }}

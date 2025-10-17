@@ -18,19 +18,21 @@ jobs:
       ECS_CONTAINER_NAME: devops-demo
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@7208146c9ce4749b4ff44ff8030d953a578fa209
+      - uses: docker/setup-buildx-action@7208146c9ce4749b4ff44ff8030d953a578fa209
 
-      - name: Build image
-        uses: docker/build-push-action@v6
+      - name: Build and push Docker image
+        uses: docker/build-push-action@7208146c9ce4749b4ff44ff8030d953a578fa209
         with:
           context: .
           file: ./Dockerfile
-          load: true
-          tags: devops-demo:test
+          push: true
+          tags: |
+            docker.io/nickkap/devops-demo:${{ github.sha }}
+            docker.io/nickkap/devops-demo:latest
 
       - name: Setup Node (for minified-body check)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@7208146c9ce4749b4ff44ff8030d953a578fa209
         with:
           node-version: '18'
 
@@ -68,23 +70,32 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/devops-demo:latest
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@7208146c9ce4749b4ff44ff8030d953a578fa209
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
         
-      - name: Force new deployment on ECS (latest)
-        if: success()
+      - name: Render task definition (use SHA tag)
+        id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@cbed19f1b86bbb18f59cfffde7107b93cc9b75da
+        with:
+          task-definition: aws/ecs-taskdef.json
+          container-name: ${{ env.ECS_CONTAINER_NAME }}
+          image: docker.io/nickkap/devops-demo:${{ github.sha }}
+
+      - name: Assert rendered task image matches SHA
         run: |
-          aws ecs update-service \
-            --cluster "${{ env.ECS_CLUSTER }}" \
-            --service "${{ env.ECS_SERVICE }}" \
-            --force-new-deployment
-      
-      - name: Wait for service to reach steady state
-        if: success()
-        run: |
-          aws ecs wait services-stable \
-            --cluster "${{ env.ECS_CLUSTER }}" \
-            --services "${{ env.ECS_SERVICE }}"
+          IMG=$(jq -r '.containerDefinitions[0].image' "${{ steps.render.outputs.task-definition }}")
+          EXPECT="docker.io/nickkap/devops-demo:${{ github.sha }}"
+          echo "Rendered image: $IMG"
+          echo "Expected image: $EXPECT"
+          test "$IMG" = "$EXPECT"
+
+      - name: Deploy to ECS service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@894716a47351b1f52a6a1d140fd53fdb046ec619
+        with:
+          cluster: ${{ env.ECS_CLUSTER }}
+          service: ${{ env.ECS_SERVICE }}
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          wait-for-service-stability: true

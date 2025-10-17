@@ -9,6 +9,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+var version = "dev"
+
 func handleRoot(c *fiber.Ctx) error {
 		var message string = "My name is Nick Kaplan"
 		var ts int64 = time.Now().UnixMilli()

@@ -10,7 +10,7 @@ Built with Fiber for routing and designed to be containerized and deployed on AW
 ## Features
 
 - Lightweight Go API (Fiber framework)
-- `JSON`: `{"message":"My name is Nick Kaplan","timestamp":<ms>}`
+- `JSON`: `{"message":"My name is Nick Kaplan","timestamp":<ms>,"version":"<git-sha>"}`
 - Minified response (no spaces / no trailing newline)
 - Port configurable via `PORT` env var (defaults to 80)
 - `Dockerfile` for multi-stage build → distroless final image
@@ -24,7 +24,7 @@ Built with Fiber for routing and designed to be containerized and deployed on AW
 - **Repository:** https://github.com/NickK21/devops-demo
 - **GitHub Actions (CI):** https://github.com/NickK21/devops-demo/actions/workflows/ci.yml
 - **Docker Hub image:** https://hub.docker.com/r/nickkap/devops-demo
-- **Live service (ECS):** http://18.246.75.48/
+- **Live service (ECS):** http://18.246.227.230/
 
 ---
 
@@ -34,30 +34,34 @@ Built with Fiber for routing and designed to be containerized and deployed on AW
 
 ```bash
 go run main.go
+# Visit http://localhost/
 ```
-Visit http://localhost/
 
 **Running with custom port:**
 
 ```bash
 PORT=8000 go run main.go
+# Visit http://localhost:8000/
 ```
-Visit http://localhost:8000/
 
 **Expected output:**
 
 ```json
-{
-  "message": "My name is Nick Kaplan",
-  "timestamp": 1760150974123 
-}
+{"message":"My name is Nick Kaplan","timestamp":1760150974123,"version":"<git-sha>"}
 ```
 
 **To test with curl:**
 
 ```bash
+# Pretty Print
 curl -s http://localhost/ | jq
+
+# Has required fields
 curl -s http://localhost/ | jq -e 'has("message") and has("timestamp")'
+
+# Body is exactly minified
+BODY=$(curl -s http://localhost/)
+diff <(echo -n "$BODY") <(echo -n "$BODY" | jq -cj .)
 ```
 
 ---
@@ -87,33 +91,34 @@ curl -s http://localhost:8000/ | jq
 **Pipeline steps:**
 
 - Build the image from the `Dockerfile`.
-- Run diagnostics against a local container:
-  - Request `http://localhost/`
-  - Verify Content-Type is `application/json`
+- Spin up the container and run diagnostics:
+  - `GET /` must return `Content-Type: application/json`
   - Verify the body is exactly minified:
     - `diff` against `jq -cj .`
     - `JSON.stringify(JSON.parse(body)) === body` in Node
-- Run Liatrio’s apprentice-action (first six tests pass; “minified JSON” test is stubbed).
+- Run Liatrio’s apprentice-action suite.
 - Push the image to Docker Hub with two tags:
   - :`<git-sha>-<run-number>`
   - :`latest`
+- The workflow pins liatrio/github-actions/apprentice-action to commit # `7208146...`
 
 ---
 
 ## AWS Deployment (ECS Fargate)
 
-- **Platform:** ECS on Fargate (1 task, no load balancer for the demo)
+- **Cluster/Service Group:** `devops-demo-cluster` / `devops-demo-svc`
+- **Task family/Container:** `devops-demo` / `devops-demo` (port 80)
 - **Network:** Public subnets; task assigned a public IP
-- **Ingress:** Allow HTTP (TCP/80) for demo purposes
+- **Security Group:** Inbound TCP/80 (open for demo)
 
-### Test
+### Verify Live Service:
 
 ```bash
-curl http://18.246.75.48/
+curl http://18.246.227.230/
 ```
 
 **Expected Response**
 
 ```json
-{"message":"My name is Nick Kaplan","timestamp":1760326289394}
+{"message":"My name is Nick Kaplan","timestamp":<ms>,"version":"<git-sha>"}
 ```

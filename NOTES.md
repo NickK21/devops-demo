@@ -34,8 +34,8 @@ This file tracks progress and decisions made during the DevOps assessment projec
 - Created a multi-stage `Dockerfile`:
   - Uses `golang:1.22-alpine` for build stage.
   - Compiles a static binary with `CGO_ENABLED=0` for portability.
-  - Uses `distroless/static:nonroot` for secure runtime.
-  - Runs as non-root and exposes port 80.
+  - Uses `gchr.io/distroless/static` for minimal runtime.
+  - Exposes port 80.
 - Successfully built and tested container locally:
   - `docker build -t devops-demo:local .`
   - `docker run --rm -p 8000:80 devops-demo:local`
@@ -61,5 +61,24 @@ This file tracks progress and decisions made during the DevOps assessment projec
 
 ---
 
-## Next Steps
-- Implement extra credit version field and auto-deploy workflow.
+## 2025-10-16 — Final CI/CD Automation + ECS Verification
+
+- Confirmed working CI/CD pipeline end-to-end:
+  - Builds, tests, and pushes Docker image to Docker Hub (`nickkap/devops-demo`).
+  - ECS Fargate task automatically redeploys via GitHub Actions.
+- Pinned `liatrio/github-actions/apprentice-action` to a specific commit SHA for deterministic builds.
+- Updated workflow (`ci.yml`) to:
+  - Embed `git SHA` via Go `-ldflags` (included as `"version"` field in JSON output).
+  - Push image to Docker Hub with tags `:<git-sha>-<run-number>` and `:latest`.
+  - Force ECS service update and wait for steady state.
+- Verified ECS task revision update using:
+  - `aws ecs list-tasks` and `aws ecs describe-tasks`
+  - Confirmed new task running on `devops-demo-cluster` with container `devops-demo:latest`.
+- Retrieved new public IP (`18.246.227.230`) from ENI details and verified live API response:
+
+```bash
+curl -i http://18.246.227.230/
+
+# HTTP/1.1 200 OK
+# {"message":"My name is Nick Kaplan","timestamp":<ms>,"version":"<git-sha>"}
+```

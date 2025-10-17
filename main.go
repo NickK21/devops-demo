@@ -17,7 +17,7 @@ func handleRoot(c *fiber.Ctx) error {
 
 		c.Set(fiber.HeaderContentType, "application/json")
 
-		var body string = fmt.Sprintf(`{"message":"%s","timestamp":%d}`, message, ts)
+		var body string = fmt.Sprintf(`{"message":"%s","timestamp":%d,"version":"%s"}`, message, ts, version)
 
 		c.Status(fiber.StatusOK)
 

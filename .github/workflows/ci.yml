@@ -30,7 +30,7 @@ jobs:
           curl -sI http://localhost/ | grep -i '^content-type:'
 
       - name: Verify with apprentice-action
-        uses: liatrio/github-actions/apprentice-action@master
+        uses: liatrio/github-actions/apprentice-action@7208146c9ce4749b4ff44ff8030d953a578fa209
         continue-on-error: true
 
       - name: Log in and push (only if above succeeded)

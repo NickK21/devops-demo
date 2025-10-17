@@ -63,22 +63,17 @@ This file tracks progress and decisions made during the DevOps assessment projec
 
 ## 2025-10-16 — Final CI/CD Automation + ECS Verification
 
-- Confirmed working CI/CD pipeline end-to-end:
-  - Builds, tests, and pushes Docker image to Docker Hub (`nickkap/devops-demo`).
-  - ECS Fargate task automatically redeploys via GitHub Actions.
-- Pinned `liatrio/github-actions/apprentice-action` to a specific commit SHA for deterministic builds.
-- Updated workflow (`ci.yml`) to:
-  - Embed `git SHA` via Go `-ldflags` (included as `"version"` field in JSON output).
-  - Push image to Docker Hub with tags `:<git-sha>-<run-number>` and `:latest`.
-  - Force ECS service update and wait for steady state.
-- Verified ECS task revision update using:
-  - `aws ecs list-tasks` and `aws ecs describe-tasks`
-  - Confirmed new task running on `devops-demo-cluster` with container `devops-demo:latest`.
-- Retrieved new public IP (`44.242.173.72`) from ENI details and verified live API response:
-
-```bash
-curl -i http://44.242.173.72/
-
-# HTTP/1.1 200 OK
-# {"message":"My name is Nick Kaplan","timestamp":<ms>,"version":"<git-sha>"}
-```
+- CI/CD now runs end-to-end on every push to `main`:
+  - Builds the Docker image and embeds the Git commit via Go `-ldflags` → JSON includes `"version":"<git-sha>"`.
+  - Pushes the image to Docker Hub with two tags: `:<git-sha>-<run-number>` and `:latest`.
+  - Deploys the SHA-tagged image to ECS Fargate (not `latest`) using the rendered task definition, then waits for steady state.
+- Pinned `liatrio/github-actions/apprentice-action` to a specific commit SHA for deterministic tests; other GitHub Actions use stable version tags.
+- Verified deploy:
+  - Confirmed the task definition’s image equals the SHA tag:
+    - `aws ecs describe-task-definition --task-definition <TD_ARN> --query 'taskDefinition.containerDefinitions[0].image'`
+  - Confirmed the running task uses that same image:
+    - `aws ecs describe-tasks --cluster devops-demo-cluster --tasks <TASK_ARN> --query 'tasks[0].containers[0].image'`
+  - Retrieved the public IP from the task ENI and validated the live response:
+    - `ENI_ID=$(aws ecs describe-tasks ... | jq -r '.tasks[0].attachments[] | select(.type=="ElasticNetworkInterface") | .details[] | select(.name=="networkInterfaceId") | .value')`
+    - `PUB_IP=$(aws ec2 describe-network-interfaces --network-interface-ids "$ENI_ID" --query 'NetworkInterfaces[0].Association.PublicIp' --output text)`
+    - `curl -s "http://$PUB_IP/" | jq .  # shows {"message","timestamp","version":"<git-sha>"}`

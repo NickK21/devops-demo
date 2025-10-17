@@ -74,10 +74,10 @@ This file tracks progress and decisions made during the DevOps assessment projec
 - Verified ECS task revision update using:
   - `aws ecs list-tasks` and `aws ecs describe-tasks`
   - Confirmed new task running on `devops-demo-cluster` with container `devops-demo:latest`.
-- Retrieved new public IP (`18.246.227.230`) from ENI details and verified live API response:
+- Retrieved new public IP (`44.242.173.72`) from ENI details and verified live API response:
 
 ```bash
-curl -i http://18.246.227.230/
+curl -i http://44.242.173.72/
 
 # HTTP/1.1 200 OK
 # {"message":"My name is Nick Kaplan","timestamp":<ms>,"version":"<git-sha>"}

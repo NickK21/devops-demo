@@ -24,7 +24,7 @@ Built with Fiber for routing and designed to be containerized and deployed on AW
 - **Repository:** https://github.com/NickK21/devops-demo
 - **GitHub Actions (CI):** https://github.com/NickK21/devops-demo/actions/workflows/ci.yml
 - **Docker Hub image:** https://hub.docker.com/r/nickkap/devops-demo
-- **Live service (ECS):** http://18.246.227.230/
+- **Live service (ECS):** http://44.242.173.72/
 
 ---
 
@@ -114,7 +114,7 @@ curl -s http://localhost:8000/ | jq
 ### Verify Live Service:
 
 ```bash
-curl http://18.246.227.230/
+curl http://44.242.173.72/
 ```
 
 **Expected Response**
